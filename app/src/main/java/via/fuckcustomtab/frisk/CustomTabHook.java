@@ -23,12 +23,9 @@ public class CustomTabHook implements IXposedHookLoadPackage {
 
         XposedBridge.log("Via CCT hook loaded for: " + lpparam.packageName);
 
-        // 1. 尝试禁用 CustomTabs 服务 (可选，防止部分 App 认为 Via 支持 CCT)
-        // 注意：如果浏览器更新，这些混淆名(d, e, l, m)可能已经变了，导致 Hook 失效。
-        // 但这通常不会导致崩溃，只会导致 Hook 不生效。建议定期检查混淆映射。
+        // 尝试禁用 CustomTabs 服务 (可选，防止部分 App 认为 Via 支持 CCT)
         try {
             Class<?> svc = XposedHelpers.findClass("mark.via.service.CustomTabsConnectionService", lpparam.classLoader);
-            // 这里为了防止 NoSuchMethodError 导致崩溃，建议捕获异常或动态查找方法
             safeReturnConstant(svc, "d", false);
             safeReturnConstant(svc, "e", false);
             safeReturnConstant(svc, "l", false);
@@ -37,8 +34,7 @@ public class CustomTabHook implements IXposedHookLoadPackage {
             XposedBridge.log("CustomTabsConnectionService hooks skipped (Class not found or method changed)");
         }
 
-        // 2. 全局拦截 startActivity，实现无缝重定向 (替代 Trampoline hook)
-        // 这种方式不需要知道 Trampoline 的混淆方法名，更稳定。
+        // 全局拦截 startActivity，实现无缝重定向 (替代 Trampoline hook)
         XposedHelpers.findAndHookMethod(
                 Activity.class,
                 "startActivityForResult",
@@ -77,7 +73,7 @@ public class CustomTabHook implements IXposedHookLoadPackage {
                 }
         );
 
-        // 3. 兜底策略：如果上面的拦截漏了，CustomTab 还是启动了，就在 onCreate 里关掉它
+        // 如果上面的拦截漏了，CustomTab 还是启动了，就在 onCreate 里关掉它
         XposedHelpers.findAndHookMethod(
                 "mark.via.CustomTab",
                 lpparam.classLoader,
@@ -86,7 +82,7 @@ public class CustomTabHook implements IXposedHookLoadPackage {
                 new XC_MethodHook() {
                     @Override
                     protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                        // 【关键修复】绝对不要在这里调用 param.setResult(null)！
+                        // 不要在这里调用 param.setResult(null)
                         // 必须让 super.onCreate() 执行，否则会报 SuperNotCalledException。
 
                         Activity act = (Activity) param.thisObject;
@@ -112,7 +108,7 @@ public class CustomTabHook implements IXposedHookLoadPackage {
         );
     }
 
-    // 辅助方法：安全地 Hook 并返回常量，防止因方法名变动导致崩溃
+    // 安全地 Hook 并返回常量，防止因方法名变动导致崩溃
     private void safeReturnConstant(Class<?> clazz, String methodName, Object ret) {
         try {
             XposedBridge.hookAllMethods(clazz, methodName, XC_MethodReplacement.returnConstant(ret));
