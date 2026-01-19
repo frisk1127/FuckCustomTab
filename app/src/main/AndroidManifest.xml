@@ -16,7 +16,7 @@
 
         <meta-data
             android:name="xposeddescription"
-            android:value="Via Custom Tab Redirect" />
+            android:value="Custom Tab Redirect" />
 
         <meta-data
             android:name="xposedminversion"
