@@ -16,11 +16,11 @@
 | 浏览器 | 版本 |
 | --- | --- |
 | Via | 6.9.0 |
-| Chrome | 749919233 |
-| Edge | 365013923 |
+| Chrome | 143.0.7499.192 |
+| Edge | 143.0.3650.139 |
 
 <details>
-<summary><strong>背景说明（已废弃）</strong></summary>
+<summary><strong>制作原因</strong></summary>
 
 Via 在版本 6.9.0 适配了链接应用内打开 导致想要使用浏览器内置的下载管理器等页面需要再点击一个按钮跳转到 Via 非常繁琐
 
