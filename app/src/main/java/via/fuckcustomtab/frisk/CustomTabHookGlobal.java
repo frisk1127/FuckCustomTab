@@ -9,7 +9,6 @@ import android.os.Bundle;
 
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.XC_MethodHook;
-import de.robv.android.xposed.XC_MethodReplacement;
 import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
@@ -19,7 +18,7 @@ public class CustomTabHookGlobal implements IXposedHookLoadPackage {
     @Override
     public void handleLoadPackage(final XC_LoadPackage.LoadPackageParam lpparam) {
         hookCustomTabsIntent(lpparam);
-        hookStartActivity();
+        hookStartActivity(lpparam.packageName);
         hookViaTrampoline(lpparam);
     }
 
@@ -71,7 +70,7 @@ public class CustomTabHookGlobal implements IXposedHookLoadPackage {
         }
     }
 
-    private void hookStartActivity() {
+    private void hookStartActivity(final String currentPackageName) {
         XposedHelpers.findAndHookMethod(
                 Activity.class,
                 "startActivityForResult",
@@ -84,7 +83,7 @@ public class CustomTabHookGlobal implements IXposedHookLoadPackage {
                         Intent intent = (Intent) param.args[0];
                         if (intent == null) return;
 
-                        if (isCustomTabIntent(intent)) {
+                        if (isCustomTabIntent(intent) && !isInCurrentPackage(intent, currentPackageName)) {
                             logInfo("startActivityForResult CustomTab intent",
                                     buildIntentSummary(intent));
                             intent.setComponent((ComponentName) null);
@@ -143,6 +142,17 @@ public class CustomTabHookGlobal implements IXposedHookLoadPackage {
         if (uri == null) return false;
         String scheme = uri.getScheme();
         return "http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme);
+    }
+
+    private boolean isInCurrentPackage(Intent intent, String currentPackageName) {
+        if (currentPackageName == null) return false;
+
+        ComponentName component = intent.getComponent();
+        if (component != null && currentPackageName.equals(component.getPackageName())) {
+            return true;
+        }
+
+        return currentPackageName.equals(intent.getPackage());
     }
 
     private boolean isCustomTabIntent(Intent intent) {
